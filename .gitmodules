@@ -1,0 +1,18 @@
+[submodule "start/vim-gruvbox8"]
+	path = start/vim-gruvbox8
+	url = https://github.com/lifepillar/vim-gruvbox8.git
+[submodule "start/vim-illuminate"]
+	path = start/vim-illuminate
+	url = https://github.com/RRethy/vim-illuminate.git
+[submodule "start/rainbow"]
+	path = start/rainbow
+	url = https://github.com/luochen1990/rainbow.git
+[submodule "start/vim-search-pulse"]
+	path = start/vim-search-pulse
+	url = https://github.com/inside/vim-search-pulse.git
+[submodule "start/vim-sensible"]
+	path = start/vim-sensible
+	url = https://github.com/tpope/vim-sensible.git
+[submodule "start/vim-vinegar"]
+	path = start/vim-vinegar
+	url = https://github.com/tpope/vim-vinegar.git
