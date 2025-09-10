@@ -138,20 +138,43 @@ augroup my_vimrc
 augroup END
 
 def FilesPicker(A: string, L: string, P: number): list<string>
-        var cmd = 'rg --files -tcpp --no-messages'
-        var items = cmd->systemlist()
-        if A->len() > 0
-                return items->matchfuzzy(A)
+
+    var parts = L->split(' ')
+    if !empty(parts) && parts[0] ==# 'Files'
+        call remove(parts, 0)
+    endif
+
+    var rg_args = []
+    var fuzzy_terms = []
+
+    for part in parts
+        if part =~ '^-'
+            rg_args->add(part)
         else
-                return items
+            fuzzy_terms->add(part)
         endif
+    endfor
+
+    var cmd = 'rg --files ' .. rg_args->join(' ') .. ' --no-messages --color=never'
+    var items = cmd->systemlist()
+
+    var fuzzy_input = fuzzy_terms->join(' ')->trim()
+    if fuzzy_input != ''
+        return items->matchfuzzy(fuzzy_input)
+    else
+        return items
+    endif
 enddef
 
 def FilesRunner(args: string)
-        exe 'e ' .. args
+    if args != ''
+        exe 'edit ' .. args
+    else
+        echoerr 'Keine Datei angegeben'
+    endif
 enddef
 
-command! -nargs=1 -bar -complete=customlist,FilesPicker Files call FilesRunner(<q-args>) 
+command! -nargs=? -bar -complete=customlist,FilesPicker Files call FilesRunner(<q-args>)
 
 def GallFunction(re: string)
   cexpr []
@@ -164,8 +187,50 @@ enddef
 command! -nargs=1 Gall call GallFunction(<q-args>)
 
 # selet an open buffer by :Buffer
-command! -nargs=? -bang Buffer if <q-args> != '' | exe 'buffer '.<q-args> | else | ls<bang> | let buffer_nn=input('Which one: ') | if buffer_nn != '' | exe buffer_nn != 0 ? 'buffer '.buffer_nn : 'enew' | endif | endif
+def BufferCommand(arg: string, bang: string)
+    var buffers = getbufinfo({'buflisted': 1})
+    var matches = []
 
+    if arg != ''
+        for b in buffers
+            if matchfuzzy([b.name], arg)->len() > 0
+                matches->add(b)
+            endif
+        endfor
+    else
+        for b in buffers
+            matches->add(b)
+        endfor
+    endif
+
+    if matches->len() == 0
+        echohl ErrorMsg | echo 'No matching buffer found' | echohl None
+        return
+    elseif matches->len() == 1
+        execute 'buffer ' .. matches[0].bufnr
+    else
+        echo 'Matching buffers:'
+        for i in range(matches->len())
+            echo printf('%d: %s', matches[i].bufnr, fnamemodify(matches[i].name, ':~:.'))
+        endfor
+        var choice = input('Which buffer number? ')
+        if choice != ''
+            execute 'buffer ' .. choice
+        endif
+    endif
+enddef
+
+def BufferCompletion(A: string, L: string, P: number): list<string>
+    var buffers = getbufinfo({'buflisted': 1})
+    var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
+    if A != ''
+        return names->matchfuzzy(A)
+    else
+        return names
+    endif
+enddef
+
+command! -nargs=? -bang -complete=customlist,BufferCompletion Buffer call BufferCommand(<q-args>, '<bang>')
 
 #packadd! editorconfig
 #packadd lsp
