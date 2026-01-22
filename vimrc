@@ -24,11 +24,11 @@ set path+=**
 set wildmenu
 set wildoptions=pum,fuzzy
 set wildmode=longest:full
+set wildmode=noselect:lastused,full
 set updatetime=100
 
-filetype plugin on
-filetype plugin indent on
 syntax on
+filetype plugin indent on
 
 if has("gui_running") && (has('win32') || has('win64'))
     #set renderoptions=type:directx,level:0.75,gamma:1.25,contrast:0.25,geom:1,renmode:5,taamode:1
@@ -45,17 +45,65 @@ set background=dark
 # grep ripgrep
 if executable('rg')
     set grepformat+=%f:%l:%c:%m
-    set grepprg=rg.exe\ --vimgrep\ --smart-case\ --follow\ --no-messages
+    set grepprg=rg\ --vimgrep\ --smart-case\ --follow\ --no-messages
+
+    # Globaler Cache
+    g:grep_word_cache = {}
+
+    # Funktion, um Cache eines Buffers zu aktualisieren
+    def UpdateBufferCache(buf: number)
+        if !buflisted(buf)
+            return
+        endif
+        var words = {}
+        for line in getbufline(buf,  1, '$')
+            for w in split(line, '\W\+')
+                if strlen(w) > 1
+                    words[w] = 1
+                endif
+            endfor
+        endfor
+        g:grep_word_cache[buf] = keys(words)
+    enddef
+
+    def BufferWords(ArgLead: string, CmdLine: string, CursorPos: number): list<string>
+        var all_words = {}
+        # Alle gecachten Buffers durchgehen
+        for buf_words in values(g:grep_word_cache)
+            for w in buf_words
+                all_words[w] = 1
+            endfor
+        endfor
+        # Einzigartige Wörter zurückgeben
+        return matchfuzzy(keys(all_words), ArgLead, {limit: 20})
+    enddef
 
     def Grep(...args: list<string>): string
         return system(join([&grepprg] + [expandcmd(join(args, ' '))], ' '))
     enddef
 
-    command! -nargs=+ -complete=file_in_path -bar Grep  cgetexpr Grep(<f-args>)
-    command! -nargs=+ -complete=file_in_path -bar LGrep lgetexpr Grep(<f-args>)
+    command! -nargs=+ -complete=customlist,BufferWords Grep cgetexpr Grep(<f-args>)
 
-    cnoreabbrev <expr> grep  (getcmdtype() ==# ':' && getcmdline() ==# 'grep')  ? 'Grep'  : 'grep'
-    cnoreabbrev <expr> lgrep (getcmdtype() ==# ':' && getcmdline() ==# 'lgrep') ? 'LGrep' : 'lgrep'
+    augroup my_grep
+        autocmd!
+        # Alle Buffers beim Laden/Ändern aktualisieren
+        autocmd BufReadPost,BufWritePost * call UpdateBufferCache(bufnr('%'))
+    augroup END
+
+    #command! -nargs=+ -complete=file_in_path -bar Grep  cgetexpr Grep(<f-args>)
+    #command! -nargs=+ -complete=file_in_path -bar LGrep lgetexpr Grep(<f-args>)
+
+    #cnoreabbrev <expr> grep  (getcmdtype() ==# ':' && getcmdline() ==# 'grep')  ? 'Grep'  : 'grep'
+    #cnoreabbrev <expr> lgrep (getcmdtype() ==# ':' && getcmdline() ==# 'lgrep') ? 'LGrep' : 'lgrep'
+
+    g:filescache = []
+    def Find(arg: string, _: any): list<string>
+        if empty(g:filescache)
+            g:filescache = systemlist('rg --files --no-messages --color=never')
+        endif
+        return arg == '' ? g:filescache : matchfuzzy(g:filescache, arg, {limit: 20})
+    enddef
+    set findfunc=Find
 endif
 
 # set default leader to <space>
@@ -95,19 +143,7 @@ nnoremap <space>" viw<esc>a"<esc>bi"<esc>lel
 nnoremap <c-n> :cn<enter>
 nnoremap <c-p> :cp<enter>
 
-# https://medium.com/@kpereksta/setting-up-a-c-development-environment-with-vim-on-debian-ea42d5b810
-# inoremap <expr> <Tab> pumvisible() ? '<C-n>' :getline('.')[col('.')-2] =~# '[[:alnum:].-_#$]' ? '<C-x><C-o>' : '<Tab>'
-set wildmode=noselect:lastused,full
-set wildoptions=pum
 
-set findfunc=Find
-var g:filescache = []
-func Find(arg, _)
-  if empty(g:filescache)
-    g:filescache = systemlist('rg --files --no-messages --color=never')
-  endif
-  return a:arg == '' ? g:filescache : matchfuzzy(g:filescache, a:arg)
-endfunc
 def UpdateQF()
     if &modified
         var curline = line('.')
@@ -149,45 +185,6 @@ augroup my_vimrc
     autocmd CmdlineEnter : g:filescache = []
     autocmd CmdlineChanged [:\/\?] call wildtrigger()
 augroup END
-
-def FilesPicker(A: string, L: string, P: number): list<string>
-
-    var parts = L->split(' ')
-    if !empty(parts) && parts[0] ==# 'Files'
-        call remove(parts, 0)
-    endif
-
-    var rg_args = []
-    var fuzzy_terms = []
-
-    for part in parts
-        if part =~ '^-'
-            rg_args->add(part)
-        else
-            fuzzy_terms->add(part)
-        endif
-    endfor
-
-    var cmd = 'rg --files ' .. rg_args->join(' ') .. ' --no-messages --color=never'
-    var items = cmd->systemlist()
-
-    var fuzzy_input = fuzzy_terms->join(' ')->trim()
-    if fuzzy_input != ''
-        return items->matchfuzzy(fuzzy_input)
-    else
-        return items
-    endif
-enddef
-
-def FilesRunner(args: string)
-    if args != ''
-        exe 'edit ' .. args
-    else
-        echoerr 'Keine Datei angegeben'
-    endif
-enddef
-
-command! -nargs=? -bar -complete=customlist,FilesPicker Files call FilesRunner(<q-args>)
 
 def GallFunction(re: string)
   cexpr []
