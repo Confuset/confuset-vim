@@ -10,6 +10,7 @@ set ignorecase
 set hlsearch
 set incsearch
 set number
+set confirm
 set clipboard=unnamed
 set backspace=indent,eol,start
 set listchars=tab:\|-,trail:~,extends:>,precedes:<
@@ -96,7 +97,17 @@ nnoremap <c-p> :cp<enter>
 
 # https://medium.com/@kpereksta/setting-up-a-c-development-environment-with-vim-on-debian-ea42d5b810
 # inoremap <expr> <Tab> pumvisible() ? '<C-n>' :getline('.')[col('.')-2] =~# '[[:alnum:].-_#$]' ? '<C-x><C-o>' : '<Tab>'
+set wildmode=noselect:lastused,full
+set wildoptions=pum
 
+set findfunc=Find
+var g:filescache = []
+func Find(arg, _)
+  if empty(g:filescache)
+    g:filescache = systemlist('rg --files --no-messages --color=never')
+  endif
+  return a:arg == '' ? g:filescache : matchfuzzy(g:filescache, a:arg)
+endfunc
 def UpdateQF()
     if &modified
         var curline = line('.')
@@ -135,6 +146,8 @@ augroup my_vimrc
     autocmd InsertEnter <buffer> match Error /\s\+\%#\@<!$/
     autocmd InsertLeave <buffer> match Error /\s\+$/
     autocmd BufWinLeave <buffer> call clearmatches()
+    autocmd CmdlineEnter : g:filescache = []
+    autocmd CmdlineChanged [:\/\?] call wildtrigger()
 augroup END
 
 def FilesPicker(A: string, L: string, P: number): list<string>
