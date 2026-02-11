@@ -24,6 +24,8 @@ set path+=**
 set wildmenu
 set wildoptions=pum,fuzzy
 set wildmode=longest:full
+set wildmode=noselect:lastused,full
+
 set updatetime=100
 
 filetype plugin on
@@ -47,6 +49,9 @@ if executable('rg')
     set grepformat+=%f:%l:%c:%m
     set grepprg=rg.exe\ --vimgrep\ --smart-case\ --follow\ --no-messages
 
+    #set grepprg=rg.exe\ --smart-case\ --follow\ --no-messages\ --json
+    #set grepformat=%t%*[^{]{%f:%l:%c:%m}
+
     def Grep(...args: list<string>): string
         return system(join([&grepprg] + [expandcmd(join(args, ' '))], ' '))
     enddef
@@ -57,6 +62,10 @@ if executable('rg')
     cnoreabbrev <expr> grep  (getcmdtype() ==# ':' && getcmdline() ==# 'grep')  ? 'Grep'  : 'grep'
     cnoreabbrev <expr> lgrep (getcmdtype() ==# ':' && getcmdline() ==# 'lgrep') ? 'LGrep' : 'lgrep'
 endif
+
+# cursor style
+&t_SI = "\e[6 q"
+&t_EI = "\e[2 q"
 
 # set default leader to <space>
 g:mapleader = " "
@@ -97,17 +106,17 @@ nnoremap <c-p> :cp<enter>
 
 # https://medium.com/@kpereksta/setting-up-a-c-development-environment-with-vim-on-debian-ea42d5b810
 # inoremap <expr> <Tab> pumvisible() ? '<C-n>' :getline('.')[col('.')-2] =~# '[[:alnum:].-_#$]' ? '<C-x><C-o>' : '<Tab>'
-set wildmode=noselect:lastused,full
-set wildoptions=pum
 
-set findfunc=Find
-var g:filescache = []
+g:filescache = ['']
 func Find(arg, _)
   if empty(g:filescache)
+      var l = ''
     g:filescache = systemlist('rg --files --no-messages --color=never')
   endif
   return a:arg == '' ? g:filescache : matchfuzzy(g:filescache, a:arg)
 endfunc
+set findfunc=Find
+
 def UpdateQF()
     if &modified
         var curline = line('.')
@@ -135,6 +144,7 @@ enddef
 
 augroup my_vimrc
     autocmd!
+    autocmd VimEnter * call rainbow#load()
     autocmd GUIEnter * simalt ~x
     # automatically open quickfix window after build is completed
     autocmd QuickFixCmdPost [^l]* ++nested cwindow
@@ -146,20 +156,20 @@ augroup my_vimrc
     autocmd InsertEnter <buffer> match Error /\s\+\%#\@<!$/
     autocmd InsertLeave <buffer> match Error /\s\+$/
     autocmd BufWinLeave <buffer> call clearmatches()
+
     autocmd CmdlineEnter : g:filescache = []
     autocmd CmdlineChanged [:\/\?] call wildtrigger()
+
+    autocmd FileType qf highlight QuickFixLine guibg=#3c3836
 augroup END
 
 def FilesPicker(A: string, L: string, P: number): list<string>
-
     var parts = L->split(' ')
     if !empty(parts) && parts[0] ==# 'Files'
         call remove(parts, 0)
     endif
-
     var rg_args = []
     var fuzzy_terms = []
-
     for part in parts
         if part =~ '^-'
             rg_args->add(part)
@@ -215,7 +225,6 @@ def BufferCommand(arg: string, bang: string)
             matches->add(b)
         endfor
     endif
-
     if matches->len() == 0
         echohl ErrorMsg | echo 'No matching buffer found' | echohl None
         return
@@ -232,7 +241,6 @@ def BufferCommand(arg: string, bang: string)
         endif
     endif
 enddef
-
 def BufferCompletion(A: string, L: string, P: number): list<string>
     var buffers = getbufinfo({'buflisted': 1})
     var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
@@ -242,11 +250,9 @@ def BufferCompletion(A: string, L: string, P: number): list<string>
         return names
     endif
 enddef
-
 command! -nargs=? -bang -complete=customlist,BufferCompletion Buffer call BufferCommand(<q-args>, '<bang>')
-
 #packadd! editorconfig
-#packadd lsp
+packadd lsp
 def LoadLsp()
     g:LspAddServer([{
         name: 'clangd',
@@ -281,4 +287,5 @@ def LoadLsp()
     #nnoremap <leader>ci :vsc Edit.UncommentSelection<CR>
     #xnoremap <leader>ci :vsc Edit.UncommentSelection<CR>
 enddef
+LoadLsp()
 command! LoadLsp call LoadLsp()
