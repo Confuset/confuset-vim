@@ -25,10 +25,12 @@ set wildmenu
 set wildoptions=pum,fuzzy
 set wildmode=longest:full
 set wildmode=noselect:lastused,full
+
 set updatetime=100
 
-syntax on
+filetype plugin on
 filetype plugin indent on
+syntax on
 
 if has("gui_running") && (has('win32') || has('win64'))
     #set renderoptions=type:directx,level:0.75,gamma:1.25,contrast:0.25,geom:1,renmode:5,taamode:1
@@ -45,66 +47,25 @@ set background=dark
 # grep ripgrep
 if executable('rg')
     set grepformat+=%f:%l:%c:%m
-    set grepprg=rg\ --vimgrep\ --smart-case\ --follow\ --no-messages
+    set grepprg=rg.exe\ --vimgrep\ --smart-case\ --follow\ --no-messages
 
-    # Globaler Cache
-    g:grep_word_cache = {}
-
-    # Funktion, um Cache eines Buffers zu aktualisieren
-    def UpdateBufferCache(buf: number)
-        if !buflisted(buf)
-            return
-        endif
-        var words = {}
-        for line in getbufline(buf,  1, '$')
-            for w in split(line, '\W\+')
-                if strlen(w) > 1
-                    words[w] = 1
-                endif
-            endfor
-        endfor
-        g:grep_word_cache[buf] = keys(words)
-    enddef
-
-    def BufferWords(ArgLead: string, CmdLine: string, CursorPos: number): list<string>
-        var all_words = {}
-        # Alle gecachten Buffers durchgehen
-        for buf_words in values(g:grep_word_cache)
-            for w in buf_words
-                all_words[w] = 1
-            endfor
-        endfor
-        # Einzigartige Wörter zurückgeben
-        return matchfuzzy(keys(all_words), ArgLead, {limit: 20})
-    enddef
+    #set grepprg=rg.exe\ --smart-case\ --follow\ --no-messages\ --json
+    #set grepformat=%t%*[^{]{%f:%l:%c:%m}
 
     def Grep(...args: list<string>): string
         return system(join([&grepprg] + [expandcmd(join(args, ' '))], ' '))
     enddef
 
-    command! -nargs=+ -complete=customlist,BufferWords Grep cgetexpr Grep(<f-args>)
+    command! -nargs=+ -complete=file_in_path -bar Grep  cgetexpr Grep(<f-args>)
+    command! -nargs=+ -complete=file_in_path -bar LGrep lgetexpr Grep(<f-args>)
 
-    augroup my_grep
-        autocmd!
-        # Alle Buffers beim Laden/Ändern aktualisieren
-        autocmd BufReadPost,BufWritePost * call UpdateBufferCache(bufnr('%'))
-    augroup END
-
-    #command! -nargs=+ -complete=file_in_path -bar Grep  cgetexpr Grep(<f-args>)
-    #command! -nargs=+ -complete=file_in_path -bar LGrep lgetexpr Grep(<f-args>)
-
-    #cnoreabbrev <expr> grep  (getcmdtype() ==# ':' && getcmdline() ==# 'grep')  ? 'Grep'  : 'grep'
-    #cnoreabbrev <expr> lgrep (getcmdtype() ==# ':' && getcmdline() ==# 'lgrep') ? 'LGrep' : 'lgrep'
-
-    g:filescache = []
-    def Find(arg: string, _: any): list<string>
-        if empty(g:filescache)
-            g:filescache = systemlist('rg --files --no-messages --color=never')
-        endif
-        return arg == '' ? g:filescache : matchfuzzy(g:filescache, arg, {limit: 20})
-    enddef
-    set findfunc=Find
+    cnoreabbrev <expr> grep  (getcmdtype() ==# ':' && getcmdline() ==# 'grep')  ? 'Grep'  : 'grep'
+    cnoreabbrev <expr> lgrep (getcmdtype() ==# ':' && getcmdline() ==# 'lgrep') ? 'LGrep' : 'lgrep'
 endif
+
+# cursor style
+&t_SI = "\e[6 q"
+&t_EI = "\e[2 q"
 
 # set default leader to <space>
 g:mapleader = " "
@@ -143,6 +104,18 @@ nnoremap <space>" viw<esc>a"<esc>bi"<esc>lel
 nnoremap <c-n> :cn<enter>
 nnoremap <c-p> :cp<enter>
 
+# https://medium.com/@kpereksta/setting-up-a-c-development-environment-with-vim-on-debian-ea42d5b810
+# inoremap <expr> <Tab> pumvisible() ? '<C-n>' :getline('.')[col('.')-2] =~# '[[:alnum:].-_#$]' ? '<C-x><C-o>' : '<Tab>'
+
+g:filescache = ['']
+func Find(arg, _)
+  if empty(g:filescache)
+      var l = ''
+    g:filescache = systemlist('rg --files --no-messages --color=never')
+  endif
+  return a:arg == '' ? g:filescache : matchfuzzy(g:filescache, a:arg)
+endfunc
+set findfunc=Find
 
 def UpdateQF()
     if &modified
@@ -171,6 +144,7 @@ enddef
 
 augroup my_vimrc
     autocmd!
+    autocmd VimEnter * call rainbow#load()
     autocmd GUIEnter * simalt ~x
     # automatically open quickfix window after build is completed
     autocmd QuickFixCmdPost [^l]* ++nested cwindow
@@ -182,9 +156,47 @@ augroup my_vimrc
     autocmd InsertEnter <buffer> match Error /\s\+\%#\@<!$/
     autocmd InsertLeave <buffer> match Error /\s\+$/
     autocmd BufWinLeave <buffer> call clearmatches()
+
     autocmd CmdlineEnter : g:filescache = []
     autocmd CmdlineChanged [:\/\?] call wildtrigger()
+
+    autocmd FileType qf highlight QuickFixLine guibg=#3c3836
 augroup END
+
+def FilesPicker(A: string, L: string, P: number): list<string>
+    var parts = L->split(' ')
+    if !empty(parts) && parts[0] ==# 'Files'
+        call remove(parts, 0)
+    endif
+    var rg_args = []
+    var fuzzy_terms = []
+    for part in parts
+        if part =~ '^-'
+            rg_args->add(part)
+        else
+            fuzzy_terms->add(part)
+        endif
+    endfor
+    var cmd = 'rg --files ' .. rg_args->join(' ') .. ' --no-messages --color=never'
+    var items = cmd->systemlist()
+
+    var fuzzy_input = fuzzy_terms->join(' ')->trim()
+    if fuzzy_input != ''
+        return items->matchfuzzy(fuzzy_input)
+        else
+                return items
+        endif
+enddef
+
+def FilesRunner(args: string)
+    if args != ''
+        exe 'edit ' .. args
+    else
+        echoerr 'Keine Datei angegeben'
+    endif
+enddef
+
+command! -nargs=? -bar -complete=customlist,FilesPicker Files call FilesRunner(<q-args>)
 
 def GallFunction(re: string)
   cexpr []
@@ -212,7 +224,6 @@ def BufferCommand(arg: string, bang: string)
             matches->add(b)
         endfor
     endif
-
     if matches->len() == 0
         echohl ErrorMsg | echo 'No matching buffer found' | echohl None
         return
@@ -229,7 +240,6 @@ def BufferCommand(arg: string, bang: string)
         endif
     endif
 enddef
-
 def BufferCompletion(A: string, L: string, P: number): list<string>
     var buffers = getbufinfo({'buflisted': 1})
     var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
@@ -239,11 +249,9 @@ def BufferCompletion(A: string, L: string, P: number): list<string>
         return names
     endif
 enddef
-
 command! -nargs=? -bang -complete=customlist,BufferCompletion Buffer call BufferCommand(<q-args>, '<bang>')
-
 #packadd! editorconfig
-#packadd lsp
+packadd lsp
 def LoadLsp()
     g:LspAddServer([{
         name: 'clangd',
@@ -278,4 +286,5 @@ def LoadLsp()
     #nnoremap <leader>ci :vsc Edit.UncommentSelection<CR>
     #xnoremap <leader>ci :vsc Edit.UncommentSelection<CR>
 enddef
+LoadLsp()
 command! LoadLsp call LoadLsp()
