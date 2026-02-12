@@ -136,7 +136,7 @@ inoremap <silent> ,n <C-x><C-n>
 
 nnoremap <leader>a :argadd <c-r>=fnameescape(expand('%:p:h'))<cr>/*<C-d>
 nnoremap <leader>b :b <C-d>
-annoremap <leader>e :e **/
+nnoremap <leader>e :e **/
 nnoremap <leader>g :grep<space>
 nnoremap <leader>q :b#<cr>
 
