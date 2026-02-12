@@ -36,6 +36,10 @@ if has("gui_running") && (has('win32') || has('win64'))
     set guioptions+=l
 endif
 
+# cursor style unter linux?!
+&t_SI = "\e[6 q"
+&t_EI = "\e[2 q"
+
 #set guifont=DejaVu_Sans_Mono:h11:cANSI:qDRAFT
 set guifont=Consolas:h11:cANSI:qDRAFT
 set termguicolors
@@ -178,12 +182,18 @@ augroup my_vimrc
 
     autocmd BufReadPost quickfix ToggleQuickFix()
 
+    #mark whitespaces etc.
     autocmd BufWinEnter <buffer> match Error /\s\r$/
     autocmd InsertEnter <buffer> match Error /\s\+\%#\@<!$/
     autocmd InsertLeave <buffer> match Error /\s\+$/
     autocmd BufWinLeave <buffer> call clearmatches()
+
+    #wildmenu update
     autocmd CmdlineEnter : g:filescache = []
     autocmd CmdlineChanged [:\/\?] call wildtrigger()
+
+    # color in qf list on selected line is bad...
+    autocmd FileType qf highlight QuickFixLine guibg=#3c3836
 augroup END
 
 def GallFunction(re: string)
