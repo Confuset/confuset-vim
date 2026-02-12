@@ -1,5 +1,7 @@
 vim9script
 
+source $VIMRUNTIME/defaults.vim
+
 # be iMproved, required
 set nocompatible
 set shiftwidth=4
