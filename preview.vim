@@ -50,18 +50,32 @@ def PopupPicker(
 
   # -----------------------------
   def RenderPreview(s: dict<any>)
-    if s.preview < 0 || s.on_preview == null_function
-      return
-    endif
-    var sel = get(s.filtered, s.index, '')
-    if sel ==# ''
-      return
-    endif
-    var lines = call(s.on_preview, [sel])
-    if type(lines) != v:t_list
-      lines = [string(lines)]
-    endif
-    popup_settext(s.preview, lines)
+      if s.preview < 0 || s.on_preview == null_function
+          return
+      endif
+
+      var sel = get(s.filtered, s.index, '')
+      if sel ==# ''
+          return
+      endif
+
+      var buf = s.preview->winbufnr()
+      setbufvar(buf, '&buftype', '')
+      setbufvar(buf, '&bufhidden', 'wipe')
+      setbufvar(buf, '&swapfile', false)
+
+      setbufvar(buf, '&modifiable', true)
+      var lines = call(s.on_preview, [sel])
+      if type(lines) != v:t_list
+          lines = [string(lines)]
+      endif
+      setbufline(buf, 1, lines)
+      setbufvar(buf, '&modifiable', false)
+
+      if filereadable(sel)
+          win_execute(s.preview, 'noautocmd keepalt file ' .. fnameescape(sel))
+          win_execute(s.preview, 'filetype detect')
+      endif
   enddef
 
   # -----------------------------
