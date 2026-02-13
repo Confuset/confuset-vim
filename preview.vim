@@ -117,7 +117,7 @@ def PopupPicker(
 
     elseif key ==# "\<BS>"
       if len(s.query) > 0
-        s.query = s.query[-2]
+        s.query = s.query[ : -2]
       endif
 
     elseif key ==# 'j' || key ==# "\<Down>"
