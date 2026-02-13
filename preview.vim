@@ -164,7 +164,7 @@ def PopupPicker(
       scrollbar: 0,
       border: [1, 1, 1, 1],
       borderchars: ['═', '║', '═', '║', '╔', '╗', '╝', '╚'],
-      padding: [0, 1, 0, 1],
+      padding: [0, 2, 0, 1],
       filter: (id, key) => Key(state, id, key),
   })
 
