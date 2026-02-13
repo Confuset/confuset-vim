@@ -178,7 +178,7 @@ def PopupPicker(
           maxheight: total_height - gap,
           scrollbar: 0,
           border: [1, 1, 1, 1],
-          borderchars:  ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
+          borderchars: ['─', '│', '─', '│', '╭', '╮', '╯', '╰'],
           padding: [0, 1, 0, 1],
           zindex: popup_getoptions(state.popup).zindex + 1
       })
