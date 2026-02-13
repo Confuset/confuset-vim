@@ -201,8 +201,9 @@ def FilePreview(f: string): list<string>
 enddef
 
 def GetFiles(): list<string>
-  if executable('fd')
-    return systemlist('fd --type f')
+  var func_name = &findfunc
+  if func_name != ''
+      return call(func_name, ['', false])
   endif
   return glob('**/*', 0, 1)
 enddef
