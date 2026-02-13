@@ -166,7 +166,6 @@ def PopupPicker(
       maxheight: total_height,
       scrollbar: 0,
       border: [1, 1, 1, 1],
-      #borderchars:  ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
       borderchars: ['═', '║', '═', '║', '╔', '╗', '╝', '╚'],
       padding: [0, 1, 0, 1],
       filter: (id, key) => Key(state, id, key),
