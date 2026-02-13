@@ -29,7 +29,7 @@ set wildmode=longest:full
 set wildmode=noselect:lastused,full
 set updatetime=100
 
-syntax on
+syntax enable
 filetype plugin indent on
 
 if has("gui_running") && (has('win32') || has('win64'))
