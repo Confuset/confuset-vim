@@ -27,16 +27,6 @@ def PopupPicker(
   OnSelect: func,
   OnPreview: func = null_function
 )
-  var state = {
-    items: items,
-    query: query,
-    filtered: [],
-    index: 0,
-    popup: -1,
-    preview: -1,
-    on_select: OnSelect,
-    on_preview: OnPreview,
-  }
 
   # -----------------------------
   def Filter(s: dict<any>)
@@ -141,6 +131,16 @@ def PopupPicker(
   # -----------------------------
   # Init
   # -----------------------------
+  var state = {
+    items: items,
+    query: query,
+    filtered: [],
+    index: 0,
+    popup: -1,
+    preview: -1,
+    on_select: OnSelect,
+    on_preview: OnPreview,
+  }
   state->Filter()
 
   var total_width = float2nr(&columns * 0.8)   # 80% vom Terminal
