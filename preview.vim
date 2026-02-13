@@ -146,12 +146,12 @@ def PopupPicker(
   state.popup = popup_create([], {
       line: start_line,
       col: start_col,
-      minwidth: picker_width,
-      maxwidth: picker_width,
+      minwidth: total_width,
+      maxwidth: total_width,
       minheight: total_height,
       maxheight: total_height,
       scrollbar: 0,
-      border: [1, 0, 1, 1],
+      border: [1, 1, 1, 1],
       borderchars:  ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
       padding: [0, 1, 0, 1],
       filter: (id, key) => Key(state, id, key),
@@ -159,15 +159,17 @@ def PopupPicker(
 
   if OnPreview != null_function
       state.preview = popup_create([], {
-          line: start_line,
+          line: start_line + 1,
           col: start_col + picker_width + gap,
-          minwidth: preview_width,
-          maxwidth: preview_width,
-          minheight: total_height,
-          maxheight: total_height,
-          border: [1, 1, 1, 0],
+          minwidth: preview_width - 1,
+          maxwidth: preview_width - 1,
+          minheight: total_height - gap,
+          maxheight: total_height - gap,
+          scrollbar: 0,
+          border: [1, 1, 1, 1],
           borderchars:  ['-', '|', '-', '|', '┌', '┐', '┘', '└'],
           padding: [0, 1, 0, 1],
+          zindex: popup_getoptions(state.popup).zindex + 1
       })
   endif
 
