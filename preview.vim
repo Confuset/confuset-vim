@@ -50,9 +50,6 @@ def PopupPicker(
       endif
 
       var buf = s.preview->winbufnr()
-      setbufvar(buf, '&buftype', '')
-      setbufvar(buf, '&bufhidden', 'wipe')
-      setbufvar(buf, '&swapfile', false)
 
       setbufvar(buf, '&modifiable', true)
       var lines = call(s.on_preview, [sel])
