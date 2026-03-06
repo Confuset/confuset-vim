@@ -166,6 +166,7 @@ def PopupPicker(
       borderchars: ['═', '║', '═', '║', '╔', '╗', '╝', '╚'],
       padding: [0, 2, 0, 1],
       filter: (id, key) => Key(state, id, key),
+      mapping: false
   })
 
   if OnPreview != null_function
