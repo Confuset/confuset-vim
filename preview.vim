@@ -90,39 +90,35 @@ def PopupPicker(
 
   # -----------------------------
   def Key(s: dict<any>, id: number, key: string): number
-    if key ==# "\<Esc>"
-      s->Close()
-      return 1
+      if key ==# "\<Esc>" || key ==# "x"
+          s->Close()
+          return 1
 
-    elseif key ==# "\<CR>"
-      var sel = get(s.filtered, s.index, '')
-      s->Close()
-      if sel !=# ''
-        call(s.on_select, [sel])
+      elseif key ==# "\<CR>"
+          var sel = get(s.filtered, s.index, '')
+          s->Close()
+          if sel !=# ''
+              call(s.on_select, [sel])
+          endif
+          return 1
+
+      elseif key ==# "\<BS>"
+          if len(s.query) > 0
+              s.query = s.query[ : -2]
+          endif
+
+      elseif key ==# "\<Down>"
+          s.index = min([s.index + 1, len(s.filtered) - 1])
+
+      elseif key ==# "\<Up>"
+          s.index = max([s.index - 1, 0])
+      else
+          s.query ..= key
       endif
+
+      s->Filter()
+      s->Render()
       return 1
-
-    elseif key ==# "\<BS>"
-      if len(s.query) > 0
-        s.query = s.query[ : -2]
-      endif
-
-    elseif key ==# 'j' || key ==# "\<Down>"
-      s.index = min([s.index + 1, len(s.filtered) - 1])
-
-    elseif key ==# 'k' || key ==# "\<Up>"
-      s.index = max([s.index - 1, 0])
-
-    elseif key =~# '^\k$'
-      s.query ..= key
-
-    else
-      return 0
-    endif
-
-    s->Filter()
-    s->Render()
-    return 1
   enddef
 
   # -----------------------------
