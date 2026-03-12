@@ -7,11 +7,27 @@ vim9script
 # This option must be set to override the default files.
 g:current_compiler = "MSBuild"
 var msbuild = "msbuild"
-#var msbuild = "\"C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\amd64\\MSBuild.exe\""
 var configuration = "Debug" # Other option : Release.
 var platform = "Mixed Platform"
 
+class Job
+    var title: string
+    var cmd: string
+    var job: job
+
+    def new(title: string, cmd: string)
+        this.title = title
+        this.cmd = cmd
+    enddef
+
+    def SetJob(job: job)
+        this.job = job
+    enddef
+endclass
+
 var progress_popup = -1
+
+var joblist: list<Job> = []
 
 if exists(":CompilerSet") != 2
     command -nargs=* CompilerSet setlocal <args>
@@ -151,39 +167,51 @@ enddef
 # ===================================================================
 # RUN BUILD (async job_start)
 # ===================================================================
-var myJob = null_job
 
-def RunBuild(cmd: string)
+def RunBuild(newJob: Job)
     # Quickfix leeren
     setqflist([], 'r')
 
     # Progress Hinweis
-    ShowProgress("Build started…")
-    var build_buffer = "BuildOutput"
-    # Existierenden Buffer löschen
-#    var exists = build_buffer->bufexists()
-#    echo exists
-#    if build_buffer->bufexists()
-#        echo "delete buffer"
-#        execute 'bdelete ' .. build_buffer
-#    endif
+    ShowProgress(newJob.title .. " started…")
+    var build_buffer = newJob.title .. "_Output"
+    var b = bufadd(build_buffer)
+    setbufvar(b, '&buftype', 'nofile')
+    setbufvar(b, '&bufhidden', 'hide')
+    setbufvar(b, '&swapfile', 0)
 
-    myJob = null_job
-    myJob = job_start([&shell, &shellcmdflag, cmd], {
+    newJob.SetJob(job_start([&shell, &shellcmdflag, newJob.cmd], {
         "out_io": "buffer",
-        "out_name": "BuildOutput", # build_buffer,
+        "out_buf": b->bufnr(),
+        "out_modifiable": 0,
         "err_io": "buffer",
-        "err_name": "BuildError", # build_buffer,
+        "err_buf": b->bufnr(),
+        "err_modifiable": 0,
         "out_cb": function('OnStdout'),
         "err_cb": function('OnStdout'),
         "exit_cb": function('OnExit'),
-    })
+    }))
+    add(joblist, newJob)
 enddef
 
 
 # ===================================================================
 # COMMAND
 # ===================================================================
+
+def ShowJobs()
+    var items: list<dict<any>> = []
+
+    for j in joblist
+        items->add({
+            text: j.title .. "  [" .. job_status(j.job) .. "]",
+            user_data: j
+        })
+    endfor
+
+    popup_menu(items, {
+        title: 'Jobs'})
+enddef
 
 def BuildCurrentFile()
     var sol = g:FindSolutionForCurrentFile()
@@ -199,7 +227,7 @@ def BuildCurrentFile()
         .. " /p:Platform=Win32"
         .. " /p:SelectedFiles=" .. expand("%:t")
 
-    RunBuild(cmd)
+    RunBuild("Build " .. expand("%:h"), cmd)
 enddef
 
 def BuildProject()
@@ -215,7 +243,7 @@ def BuildProject()
         .. " /p:Configuration=Debug"
         .. " /p:Platform=Win32"
 
-    RunBuild(cmd)
+    RunBuild("Build " .. proj, cmd)
 enddef
 
 def BuildSolution()
@@ -230,10 +258,16 @@ def BuildSolution()
         .. " /p:Configuration=Debug"
         .. " /p:Platform=Win32"
 
-    RunBuild(cmd)
+    RunBuild("Build " .. sol, cmd)
+enddef
+
+def Ping()
+    RunBuild(Job.new("Ping", "ping -t google.de -n 10"))
 enddef
 
 command -nargs=0 Bf BuildCurrentFile()
 command -nargs=0 Bp BuildProject()
 command -nargs=0 Bs BuildSolution()
+command -nargs=0 Ping Ping()
+command -nargs=0 JobShow ShowJobs()
 
