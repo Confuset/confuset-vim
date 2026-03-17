@@ -19,16 +19,16 @@ set listchars=tab:\|-,trail:~,extends:>,precedes:<
 set list
 
 set history=1000
+set updatetime=100
 
 # add all subfolders to the :find path
 set path+=**
 # show all wildchar mappings in command mode
 set wildmenu
 set wildoptions=pum,fuzzy
-set wildmode=longest:full
 set wildmode=noselect:lastused,full
-set updatetime=100
-set completeopt=fuzzy,menuone,preview,noinsert
+set autocomplete
+set completeopt=fuzzy,preview
 
 syntax enable
 filetype plugin indent on
