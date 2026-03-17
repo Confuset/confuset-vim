@@ -28,7 +28,7 @@ set wildoptions=pum,fuzzy
 set wildmode=longest:full
 set wildmode=noselect:lastused,full
 set updatetime=100
-set completeopt=fuzzy,menuone,preview,noinsert,noselect
+set completeopt=fuzzy,menuone,preview,noinsert
 
 syntax enable
 filetype plugin indent on
