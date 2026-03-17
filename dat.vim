@@ -14,10 +14,12 @@ class Job
     var title: string
     var cmd: string
     var job: job
+    var errorformat: string
 
-    def new(title: string, cmd: string)
+    def new(title: string, cmd: string, errorformat: string = '')
         this.title = title
         this.cmd = cmd
+        this.errorformat = errorformat
     enddef
 
     def SetJob(job: job)
@@ -107,7 +109,6 @@ def ShowProgress(msg: string)
 enddef
 
 def CloseProgress()
-    echo "close"
     if progress_popup != -1
         popup_close(progress_popup)
         progress_popup = -1
@@ -157,9 +158,6 @@ def OnExit(channel: job, exitcode: number)
     # Quickfix anzeigen falls Fehler
     if !empty(getqflist())
         copen
-    else
-        cclose
-        echohl MoreMsg | echom "Build OK" | echohl None
     endif
 enddef
 
@@ -174,11 +172,11 @@ def RunBuild(newJob: Job)
 
     # Progress Hinweis
     ShowProgress(newJob.title .. " started…")
-    var build_buffer = newJob.title .. "_Output"
+    var build_buffer = newJob.title .. "_Output_" .. strftime('%H%M%S')
     var b = bufadd(build_buffer)
     setbufvar(b, '&buftype', 'nofile')
     setbufvar(b, '&bufhidden', 'hide')
-    setbufvar(b, '&swapfile', 0)
+    setbufvar(b, '&swapfile', false)
 
     newJob.SetJob(job_start([&shell, &shellcmdflag, newJob.cmd], {
         "out_io": "buffer",
@@ -200,8 +198,11 @@ enddef
 # ===================================================================
 
 def ShowJobs()
-    var items: list<dict<any>> = []
+    if len(joblist) == 0
+        return
+    endif
 
+    var items: list<dict<any>> = []
     for j in joblist
         items->add({
             text: j.title .. "  [" .. job_status(j.job) .. "]",
@@ -209,15 +210,26 @@ def ShowJobs()
         })
     endfor
 
-    popup_menu(items, {
-        title: 'Jobs'})
+    popup_menu(items,
+        {
+            title: 'Jobs',
+            callback: (id, result) =>
+                {
+                    if result == -1
+                        return
+                    endif
+
+                    var buffer = ch_getbufnr(items[result - 1].user_data.job, "out")
+                    execute 'vert sbuffer ' .. buffer
+                }
+        })
 enddef
 
 def BuildCurrentFile()
     var sol = g:FindSolutionForCurrentFile()
     var proj = FindProject(sol)
 
-    CompilerSet errorformat=\ %#%f(%l\\\,%c):\ %m
+    var errorformat = '\ %#%f(%l\\\,%c):\ %m'
 
     var cmd = msbuild .. " " .. proj
         .. " /m"
@@ -227,7 +239,7 @@ def BuildCurrentFile()
         .. " /p:Platform=Win32"
         .. " /p:SelectedFiles=" .. expand("%:t")
 
-    RunBuild("Build " .. expand("%:h"), cmd)
+    RunBuild(Job.new("Build " .. expand("%:h"), cmd, errorformat))
 enddef
 
 def BuildProject()
@@ -239,7 +251,7 @@ def BuildProject()
     var cmd = msbuild .. " " .. proj
         .. " /m"
         .. " /noLogo /v:m"
-        .. " /t:Build"
+        .. " /t:Build-"
         .. " /p:Configuration=Debug"
         .. " /p:Platform=Win32"
 
