@@ -283,3 +283,27 @@ command -nargs=0 Bs BuildSolution()
 command -nargs=0 Ping Ping()
 command -nargs=0 JobShow ShowJobs()
 
+# ===================================================================
+# DatCommands
+# ===================================================================
+
+var dat_first_args: list<string> = ['cl', 'rb', 'b', 'rf']
+var dat_subsystems = ['pmsc', 'lug', 'lodas', 'rscl', 'fwpp', 'all']
+
+def DatComplete(ArgLead: string, CmdLine: string, CursorPos: number): list<string>
+    var args = split(CmdLine, '\s\+')
+    if empty(args) || len(args) == 1
+        return dat_first_args
+    else
+        return dat_subsystems
+    endif
+enddef
+
+command! -nargs=+ -complete=customlist,DatComplete Dat call DatHandler([<f-args>])
+
+def DatHandler(args: list<string>)
+    if len(args) > 0
+        echo "Erstes Argument: " args[0]
+        echo "Subsysteme: " join(args[ 1 : ], ', ')
+    endif
+enddef
