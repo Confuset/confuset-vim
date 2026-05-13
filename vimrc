@@ -90,6 +90,7 @@ if executable('rg')
     enddef
 
     command! -nargs=+ -complete=customlist,BufferWords Grep cgetexpr Grep(<f-args>)
+    command! -nargs=+ -complete=customlist,BufferWords LGrep lgetexpr Grep(<f-args>)
 
     augroup my_grep
         autocmd!
@@ -118,11 +119,6 @@ g:mapleader = " "
 nnoremap <LEADER>n :lnext<CR>
 nnoremap <LEADER>p :lprevious<CR>
 nnoremap <LEADER>r :lrewind<CR>
-
-g:tfcli = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\Common7\\IDE\\CommonExtensions\\Microsoft\\TeamFoundation\\Team Explorer\\TF.exe"
-nnoremap <LEADER>co :exe "!\"" .. g:tfcli .. "\" checkout %:p"<RETURN><RETURN>
-nnoremap <LEADER>cu :exe "!\"" .. g:tfcli .. "\" undo %:p"<RETURN><RETURN>
-nnoremap <LEADER>gd :exe "!\"" .. g:tfcli .. "\" diff %:p"<RETURN><RETURN>
 
 #completions in insertmode
 #complete filename
@@ -170,7 +166,8 @@ def ToggleQuickFix()
     #:.cc   " Go to error under cursor (if cursor is in quickfix window)
     augroup qf
         autocmd!
-        autocmd BufEnter <buffer> setlocal modifiable
+        autocmd BufEnter <buffer> highlight link QuickFixLine CursorLine
+        autocmd BufEnter <buffer> setlocal modifiable cursorline
         autocmd BufLeave <buffer> call UpdateQF()
         #autocmd BufLeave <buffer> if &modified | cgetbuffer | endif
     augroup END
@@ -292,3 +289,5 @@ def LoadLsp()
     #xnoremap <leader>ci :vsc Edit.UncommentSelection<CR>
 enddef
 command! LoadLsp call LoadLsp()
+
+source <sfile>:p:h/tfs.vim
