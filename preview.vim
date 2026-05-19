@@ -197,18 +197,24 @@ def FilePreview(f: string): list<string>
     return ['<not readable>']
 enddef
 
-def GetFiles(): list<string>
+def GetFiles(s: string = ''): list<string>
   var func_name = &findfunc
   if func_name != ''
       return call(func_name, ['', false])
   endif
+
+  if s != ''
+      return glob(s, 0, 1)
+  endif
+
   return glob('**/*', 0, 1)
+    ->filter((_, v) => filereadable(v))
 enddef
 
 def OpenFilePicker(start: string = '')
   PopupPicker(
-    GetFiles(),
-    start,
+    GetFiles(start),
+    '',
     (f) => execute('edit ' .. fnameescape(f)),
     FilePreview
   )
