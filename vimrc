@@ -291,3 +291,4 @@ enddef
 command! LoadLsp call LoadLsp()
 
 source <sfile>:p:h/tfs.vim
+source <sfile>:p:h/preview.vim
