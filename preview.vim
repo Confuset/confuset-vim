@@ -57,11 +57,14 @@ def PopupPicker(
           lines = [string(lines)]
       endif
       setbufline(buf, 1, lines)
+      deletebufline(buf, len(lines) + 1, '$')
       setbufvar(buf, '&modifiable', false)
 
       if filereadable(sel)
           win_execute(s.preview, 'noautocmd keepalt file ' .. fnameescape(sel))
           win_execute(s.preview, 'filetype detect')
+          win_execute(s.preview, 'set nofoldenable')
+          win_execute(s.preview, 'set nomodeline')
       endif
   enddef
 
