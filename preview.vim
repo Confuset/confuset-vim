@@ -200,7 +200,7 @@ enddef
 def GetFiles(s: string = ''): list<string>
   var func_name = &findfunc
   if func_name != ''
-      return call(func_name, ['', false])
+      return call(func_name, [s, false])
   endif
 
   if s != ''
