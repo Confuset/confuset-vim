@@ -58,12 +58,14 @@ def TFCheckout()
     var file = expand('%:p')
     var cmd = $'TF.exe vc checkout "{file}"'
     system(cmd)
+    checktime
 enddef
 
 def TFUndo()
     var file = expand('%:p')
     var cmd = $'tf.exe vc undo "{file}"'
     system(cmd)
+    checktime
 enddef
 
 command TFStatus call TFStatus()
