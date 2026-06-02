@@ -211,7 +211,7 @@ def GetFiles(s: string = ''): list<string>
     ->filter((_, v) => filereadable(v))
 enddef
 
-def OpenFilePicker(start: string = '')
+export def OpenFilePicker(start: string = '')
   PopupPicker(
     GetFiles(start),
     '',
