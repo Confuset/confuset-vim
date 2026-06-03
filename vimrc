@@ -206,52 +206,6 @@ enddef
 # cn/cp für quickfix list
 command! -nargs=1 Gall call GallFunction(<q-args>)
 
-# selet an open buffer by :Buffer
-def BufferCommand(arg: string, bang: string)
-    var buffers = getbufinfo({'buflisted': 1})
-    var matches = []
-
-    if arg != ''
-        for b in buffers
-            if matchfuzzy([b.name], arg)->len() > 0
-                matches->add(b)
-            endif
-        endfor
-    else
-        for b in buffers
-            matches->add(b)
-        endfor
-    endif
-
-    if matches->len() == 0
-        echohl ErrorMsg | echo 'No matching buffer found' | echohl None
-        return
-    elseif matches->len() == 1
-        execute 'buffer ' .. matches[0].bufnr
-    else
-        echo 'Matching buffers:'
-        for i in range(matches->len())
-            echo printf('%d: %s', matches[i].bufnr, fnamemodify(matches[i].name, ':~:.'))
-        endfor
-        var choice = input('Which buffer number? ')
-        if choice != ''
-            execute 'buffer ' .. choice
-        endif
-    endif
-enddef
-
-def BufferCompletion(A: string, L: string, P: number): list<string>
-    var buffers = getbufinfo({'buflisted': 1})
-    var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
-    if A != ''
-        return names->matchfuzzy(A)
-    else
-        return names
-    endif
-enddef
-
-command! -nargs=? -bang -complete=customlist,BufferCompletion Buffer call BufferCommand(<q-args>, '<bang>')
-
 #packadd! editorconfig
 #packadd lsp
 def LoadLsp()

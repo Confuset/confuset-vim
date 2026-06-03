@@ -220,4 +220,16 @@ export def OpenFilePicker(start: string = '')
   )
 enddef
 
-command! -nargs=? FilePicker OpenFilePicker(<q-args>)
+export def OpenBufferPicker(start: string = '')
+  var buffers = getbufinfo({'buflisted': 1})
+  var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
+  PopupPicker(
+      names,
+      '',
+      (f) => execute('edit ' .. fnameescape(f)),
+      FilePreview
+  )
+enddef
+
+command! -nargs=? Files OpenFilePicker(<q-args>)
+command! -nargs=? Buffers OpenBufferPicker(<q-args>)
