@@ -10,3 +10,6 @@
 [submodule "start/vim-vinegar"]
 	path = pack/confuset-vim/start/vim-vinegar
 	url = https://github.com/tpope/vim-vinegar.git
+[submodule "pack/confuset-vim/start/lsp"]
+	path = pack/confuset-vim/start/lsp
+	url = https://github.com/yegappan/lsp.git
