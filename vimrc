@@ -267,11 +267,20 @@ def OpenFilePicker(start: string = '')
             (_, f) => ({'context': f, 'text': f}))
     enddef
 
-    def FilePreview(f: dict<any>): list<string>
+    def FilePreview(f: dict<any>, bufnr: number, winid: number)
         if filereadable(f.context)
-            return readfile(f.context, '', 200)
+            setbufline(bufnr, 1, readfile(f.context, '', 100))
+            deletebufline(bufnr, 101, '$')
+
+            win_execute(winid, 'noautocmd keepalt file ' .. fnameescape(f.context))
+            win_execute(winid, 'filetype detect')
+        else
+            setbufline(bufnr, 1, ['<not readable>'])
+            deletebufline(bufnr, 2, '$')
+
+            win_execute(winid, 'noautocmd keepalt file')
+            win_execute(winid, 'setlocal filetype=')
         endif
-        return ['<not readable>']
     enddef
 
     preview.PopupPicker(

@@ -54,27 +54,10 @@ export def PopupPicker(
             return
         endif
 
-        var buf = s.preview->winbufnr()
-
-        setbufvar(buf, '&modifiable', true)
-
-        var lines = call(s.on_preview, [item])
-
-        if type(lines) != v:t_list
-            lines = [string(lines)]
-        endif
-
-        setbufline(buf, 1, lines)
-        deletebufline(buf, len(lines) + 1, '$')
-
-        setbufvar(buf, '&modifiable', false)
-
-      #if filereadable(item.context)
-      #    win_execute(s.preview, 'noautocmd keepalt file ' .. fnameescape(item.context))
-      #    win_execute(s.preview, 'filetype detect')
-      #    win_execute(s.preview, 'set nofoldenable')
-      #    win_execute(s.preview, 'set nomodeline')
-      #endif
+        var bufnr = s.preview->winbufnr()
+        setbufvar(bufnr, '&modifiable', true)
+        call(s.on_preview, [item, bufnr, s.preview])
+        setbufvar(bufnr, '&modifiable', false)
     enddef
 
 
@@ -205,6 +188,7 @@ export def PopupPicker(
           padding: [0, 1, 0, 1],
           zindex: popup_getoptions(state.popup).zindex + 1
       })
+      win_execute(state.preview, 'setlocal nofoldenable nomodeline')
   endif
 
   state->Render()
