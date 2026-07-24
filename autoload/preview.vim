@@ -21,7 +21,7 @@ g:loaded_popup_picker = 1
 # -------------------------------
 # PopupPicker
 # -------------------------------
-def PopupPicker(
+export def PopupPicker(
   items: list<string>,
   query: string,
   OnSelect: func,
@@ -187,49 +187,3 @@ def PopupPicker(
   state->Render()
 enddef
 
-# ===============================
-# Example: File picker with preview
-# ===============================
-def FilePreview(f: string): list<string>
-    if filereadable(f)
-        return readfile(f, '', 200)
-    endif
-    return ['<not readable>']
-enddef
-
-def GetFiles(s: string = ''): list<string>
-  var func_name = &findfunc
-  if func_name != ''
-      return call(func_name, [s, false])
-  endif
-
-  if s != ''
-      return glob(s, 0, 1)
-  endif
-
-  return glob('**/*', 0, 1)
-    ->filter((_, v) => filereadable(v))
-enddef
-
-export def OpenFilePicker(start: string = '')
-  PopupPicker(
-    GetFiles(start),
-    '',
-    (f) => execute('edit ' .. fnameescape(f)),
-    FilePreview
-  )
-enddef
-
-export def OpenBufferPicker(start: string = '')
-  var buffers = getbufinfo({'buflisted': 1})
-  var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
-  PopupPicker(
-      names,
-      '',
-      (f) => execute('edit ' .. fnameescape(f)),
-      FilePreview
-  )
-enddef
-
-command! -nargs=? Files OpenFilePicker(<q-args>)
-command! -nargs=? Buffers OpenBufferPicker(<q-args>)

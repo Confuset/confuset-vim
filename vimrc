@@ -245,7 +245,51 @@ enddef
 command! LoadLsp call LoadLsp()
 
 source <sfile>:p:h/tfs.vim
-source <sfile>:p:h/preview.vim
+
+import autoload 'preview.vim'
+def FilePreview(f: string): list<string>
+    if filereadable(f)
+        return readfile(f, '', 200)
+    endif
+    return ['<not readable>']
+enddef
+
+def GetFiles(s: string = ''): list<string>
+  var func_name = &findfunc
+  if func_name != ''
+      return call(func_name, [s, false])
+  endif
+
+  if s != ''
+      return glob(s, 0, 1)
+  endif
+
+  return glob('**/*', 0, 1)
+    ->filter((_, v) => filereadable(v))
+enddef
+
+export def OpenFilePicker(start: string = '')
+  preview.PopupPicker(
+    GetFiles(start),
+    '',
+    (f) => execute('edit ' .. fnameescape(f)),
+    FilePreview
+  )
+enddef
+
+export def OpenBufferPicker(start: string = '')
+  var buffers = getbufinfo({'buflisted': 1})
+  var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
+  preview.PopupPicker(
+      names,
+      '',
+      (f) => execute('edit ' .. fnameescape(f)),
+      FilePreview
+  )
+enddef
+
+command! -nargs=? Files OpenFilePicker(<q-args>)
+command! -nargs=? Buffers OpenBufferPicker(<q-args>)
 
 import autoload 'vsenv.vim'
 augroup MSVC
