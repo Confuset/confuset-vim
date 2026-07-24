@@ -1,4 +1,5 @@
 vim9script
+
 # ===============================
 # PopupPicker.vim – generic popup picker with preview
 # ===============================
@@ -22,122 +23,144 @@ g:loaded_popup_picker = 1
 # PopupPicker
 # -------------------------------
 export def PopupPicker(
-  items: list<string>,
-  query: string,
-  OnSelect: func,
-  OnPreview: func = null_function
+    items: list<dict<any>>,
+    query: string,
+    OnSelect: func,
+    OnPreview: func = null_function
 )
 
-  # -----------------------------
-  def Filter(s: dict<any>)
-    if s.query ==# ''
-        s.filtered = s.items
-    else
-        s.filtered = matchfuzzy(s.items, s.query)
-    endif
-    s.index = min([s.index, len(s.filtered) - 1])
-  enddef
+    def Filter(s: dict<any>)
+        if s.query ==# ''
+            s.filtered = s.items
+        else
+            s.filtered = matchfuzzy(
+                s.items,
+                s.query,
+                {'key': 'text'}
+            )
+        endif
 
-  # -----------------------------
-  def RenderPreview(s: dict<any>)
-      if s.preview < 0 || s.on_preview == null_function
-          return
-      endif
+        s.index = min([s.index, max([len(s.filtered) - 1, 0])])
+    enddef
 
-      var sel = get(s.filtered, s.index, '')
-      if sel ==# ''
-          return
-      endif
 
-      var buf = s.preview->winbufnr()
+    def RenderPreview(s: dict<any>)
+        if s.preview < 0 || s.on_preview == null_function
+            return
+        endif
 
-      setbufvar(buf, '&modifiable', true)
-      var lines = call(s.on_preview, [sel])
-      if type(lines) != v:t_list
-          lines = [string(lines)]
-      endif
-      setbufline(buf, 1, lines)
-      deletebufline(buf, len(lines) + 1, '$')
-      setbufvar(buf, '&modifiable', false)
+        var item = get(s.filtered, s.index, null)
+        if item == null
+            return
+        endif
 
-      if filereadable(sel)
-          win_execute(s.preview, 'noautocmd keepalt file ' .. fnameescape(sel))
-          win_execute(s.preview, 'filetype detect')
-          win_execute(s.preview, 'set nofoldenable')
-          win_execute(s.preview, 'set nomodeline')
-      endif
-  enddef
+        var buf = s.preview->winbufnr()
 
-  # -----------------------------
-  def Render(s: dict<any>)
-    var lines = []
-    lines->add('Search: ' .. s.query)
-    lines->add(repeat('─', 40))
-    for i in range(len(s.filtered))
-      var p = (i == s.index) ? '> ' : '  '
-      lines->add(p .. s.filtered[i])
-    endfor
-    popup_settext(s.popup, lines)
-    s->RenderPreview()
-  enddef
+        setbufvar(buf, '&modifiable', true)
 
-  # -----------------------------
-  def Close(s: dict<any>)
-    if s.popup >= 0
-      popup_close(s.popup)
-    endif
-    if s.preview >= 0
-      popup_close(s.preview)
-    endif
-  enddef
+        var lines = call(s.on_preview, [item])
 
-  # -----------------------------
-  def Key(s: dict<any>, id: number, key: string): number
-      if key ==# "\<Esc>" || key ==# "x"
-          s->Close()
-          return 1
+        if type(lines) != v:t_list
+            lines = [string(lines)]
+        endif
 
-      elseif key ==# "\<CR>"
-          var sel = get(s.filtered, s.index, '')
-          s->Close()
-          if sel !=# ''
-              call(s.on_select, [sel])
-          endif
-          return 1
+        setbufline(buf, 1, lines)
+        deletebufline(buf, len(lines) + 1, '$')
 
-      elseif key ==# "\<BS>"
-          if len(s.query) > 0
-              s.query = s.query[ : -2]
-          endif
+        setbufvar(buf, '&modifiable', false)
 
-      elseif key ==# "\<Down>"
-          s.index = min([s.index + 1, len(s.filtered) - 1])
+      #if filereadable(item.context)
+      #    win_execute(s.preview, 'noautocmd keepalt file ' .. fnameescape(item.context))
+      #    win_execute(s.preview, 'filetype detect')
+      #    win_execute(s.preview, 'set nofoldenable')
+      #    win_execute(s.preview, 'set nomodeline')
+      #endif
+    enddef
 
-      elseif key ==# "\<Up>"
-          s.index = max([s.index - 1, 0])
-      else
-          s.query ..= key
-      endif
 
-      s->Filter()
-      s->Render()
-      return 1
-  enddef
+    def Render(s: dict<any>)
+        var lines = []
 
-  # -----------------------------
-  # Init
-  # -----------------------------
-  var state = {
-    items: items,
-    query: query,
-    filtered: [],
-    index: 0,
-    popup: -1,
-    preview: -1,
-    on_select: OnSelect,
-    on_preview: OnPreview,
-  }
-  state->Filter()
+        lines->add('Search: ' .. s.query)
+        lines->add(repeat('─', 40))
+
+        for i in range(len(s.filtered))
+            var prefix = (i == s.index) ? '> ' : '  '
+            lines->add(prefix .. s.filtered[i].text)
+        endfor
+
+        popup_settext(s.popup, lines)
+
+        s->RenderPreview()
+    enddef
+
+
+    def Close(s: dict<any>)
+        if s.popup >= 0
+            popup_close(s.popup)
+        endif
+
+        if s.preview >= 0
+            popup_close(s.preview)
+        endif
+    enddef
+
+
+    def Key(s: dict<any>, id: number, key: string): number
+
+        if key ==# "\<Esc>" || key ==# "x"
+            s->Close()
+            return 1
+
+        elseif key ==# "\<CR>"
+            var item = get(s.filtered, s.index, null)
+
+            s->Close()
+
+            if item != null
+                call(s.on_select, [item])
+            endif
+
+            return 1
+
+        elseif key ==# "\<BS>"
+            if len(s.query) > 0
+                s.query = s.query[: -2]
+            endif
+
+        elseif key ==# "\<Down>"
+            if s.index < len(s.filtered) - 1
+                s.index += 1
+            endif
+
+        elseif key ==# "\<Up>"
+            if s.index > 0
+                s.index -= 1
+            endif
+
+        else
+            s.query ..= key
+        endif
+
+        s->Filter()
+        s->Render()
+
+        return 1
+    enddef
+
+
+    var state: dict<any> = {
+        items: items,
+        query: query,
+        filtered: items,
+        index: 0,
+        popup: -1,
+        preview: -1,
+        on_select: OnSelect,
+        on_preview: OnPreview,
+    }
+
+    state->Filter()
 
   var total_width = float2nr(&columns * 0.8)   # 80% vom Terminal
   var total_height = float2nr(&lines * 0.7)    # 70% Höhe

@@ -1,5 +1,7 @@
 vim9script
 
+import autoload 'preview.vim'
+
 # ===================================================================
 # GLOBAL STATE
 # ===================================================================
@@ -10,10 +12,7 @@ export class Job
     var job: job
     var errorformat: string
 
-    def new(title: string, cmd: string, errorformat: string = '')
-        this.title = title
-        this.cmd = cmd
-        this.errorformat = errorformat
+    def new(this.title, this.cmd, this.errorformat = v:none)
     enddef
 
     def SetJob(job: job)
@@ -105,7 +104,7 @@ export def StartJob(newJob: Job)
     add(joblist, newJob)
 enddef
 
-def ShowJobs()
+export def ShowJobs()
     if len(joblist) == 0
         return
     endif
@@ -117,6 +116,12 @@ def ShowJobs()
             user_data: j
         })
     endfor
+
+    preview.PopupPicker(
+        joblist->map((_, j) => j.title .. '  [' .. job_status(j.job) .. ']',
+        '',
+
+
 
     popup_menu(items,
         {

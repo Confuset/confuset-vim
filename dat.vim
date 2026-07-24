@@ -148,7 +148,7 @@ command -nargs=0 Bf BuildCurrentFile()
 command -nargs=0 Bp BuildProject()
 command -nargs=0 Bs BuildSolution()
 command -nargs=0 Ping Ping()
-command -nargs=0 JobShow ShowJobs()
+command -nargs=0 JobShow jobs.ShowJobs()
 
 # ===================================================================
 # DatCommands

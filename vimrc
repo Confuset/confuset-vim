@@ -248,45 +248,52 @@ source <sfile>:p:h/tfs.vim
 source <sfile>:p:h/dat.vim
 
 import autoload 'preview.vim'
-def FilePreview(f: string): list<string>
-    if filereadable(f)
-        return readfile(f, '', 200)
-    endif
-    return ['<not readable>']
+
+def OpenFilePicker(start: string = '')
+    def GetFiles(s: string = ''): list<dict<any>>
+        var files: list<string>
+
+        var func_name = &findfunc
+        if func_name != ''
+            files = call(func_name, [s, false])
+        elseif s != ''
+            files = glob(s, 0, 1)
+        else
+            files = glob('**/*', 0, 1)
+                ->filter((_, v) => filereadable(v))
+        endif
+
+        return files->mapnew(
+            (_, f) => ({'context': f, 'text': f}))
+    enddef
+
+    def FilePreview(f: dict<any>): list<string>
+        if filereadable(f.context)
+            return readfile(f.context, '', 200)
+        endif
+        return ['<not readable>']
+    enddef
+
+    preview.PopupPicker(
+        GetFiles(start),
+        '',
+        (i) => execute('edit ' .. fnameescape(i.context)),
+        FilePreview
+    )
 enddef
 
-def GetFiles(s: string = ''): list<string>
-  var func_name = &findfunc
-  if func_name != ''
-      return call(func_name, [s, false])
-  endif
+def OpenBufferPicker(start: string = '')
+    var buffers = getbufinfo({'buflisted': 1})
+    var items = buffers->mapnew(
+        (_, b) => ({ text: fnamemodify(b.name, ':~:.'), context: b.bufnr })
+    )
 
-  if s != ''
-      return glob(s, 0, 1)
-  endif
-
-  return glob('**/*', 0, 1)
-    ->filter((_, v) => filereadable(v))
-enddef
-
-export def OpenFilePicker(start: string = '')
-  preview.PopupPicker(
-    GetFiles(start),
-    '',
-    (f) => execute('edit ' .. fnameescape(f)),
-    FilePreview
-  )
-enddef
-
-export def OpenBufferPicker(start: string = '')
-  var buffers = getbufinfo({'buflisted': 1})
-  var names = mapnew(buffers, (_, v) => fnamemodify(v.name, ':~:.'))
-  preview.PopupPicker(
-      names,
-      '',
-      (f) => execute('edit ' .. fnameescape(f)),
-      FilePreview
-  )
+    preview.PopupPicker(
+        items,
+        '',
+        (i) => execute(':buffer ' .. i.context),
+        (i) => getbufline(i.context, 1, 100)
+    )
 enddef
 
 command! -nargs=? Files OpenFilePicker(<q-args>)
