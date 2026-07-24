@@ -246,3 +246,9 @@ command! LoadLsp call LoadLsp()
 
 source <sfile>:p:h/tfs.vim
 source <sfile>:p:h/preview.vim
+
+import autoload 'vsenv.vim'
+augroup MSVC
+    autocmd!
+    autocmd BufEnter *.cpp,*.c,*.h call vsenv.Ensure()
+augroup END

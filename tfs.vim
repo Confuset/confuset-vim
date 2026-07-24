@@ -1,6 +1,12 @@
 vim9script
 
+import autoload 'vsenv.vim'
+
 def TFStatus()
+    if !vsenv.Ensure()
+        return
+    endif
+
     echo 'Fetching tfs status...'
     var cmd = 'TF.exe vc status'
     var output = system(cmd)
@@ -25,6 +31,10 @@ def TFStatus()
 enddef
 
 def TFDiff()
+    if !vsenv.Ensure()
+        return
+    endif
+
     var file = expand('%:p')
 
     # neuen vertikalen Split erzeugen
@@ -55,6 +65,10 @@ def TFDiff()
 enddef
 
 def TFCheckout()
+    if !vsenv.Ensure()
+        return
+    endif
+
     var file = expand('%:p')
     var cmd = $'TF.exe vc checkout "{file}"'
     system(cmd)
@@ -62,6 +76,10 @@ def TFCheckout()
 enddef
 
 def TFUndo()
+    if !vsenv.Ensure()
+        return
+    endif
+
     var file = expand('%:p')
     var cmd = $'tf.exe vc undo "{file}"'
     system(cmd)
