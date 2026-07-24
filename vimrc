@@ -245,6 +245,7 @@ enddef
 command! LoadLsp call LoadLsp()
 
 source <sfile>:p:h/tfs.vim
+source <sfile>:p:h/dat.vim
 
 import autoload 'preview.vim'
 def FilePreview(f: string): list<string>
