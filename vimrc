@@ -267,7 +267,8 @@ def OpenFilePicker(start: string = '')
             (_, f) => ({'context': f, 'text': f}))
     enddef
 
-    def FilePreview(f: dict<any>, bufnr: number, winid: number)
+    def FilePreview(f: dict<any>, winid: number)
+        var bufnr = winid->winbufnr()
         if filereadable(f.context)
             setbufline(bufnr, 1, readfile(f.context, '', 100))
             deletebufline(bufnr, 101, '$')
@@ -297,11 +298,27 @@ def OpenBufferPicker(start: string = '')
         (_, b) => ({ text: fnamemodify(b.name, ':~:.'), context: b.bufnr })
     )
 
+    def BufferPreview(item: dict<any>, winid: number): void
+        var lines = getbufline(item.context, 1, 100)
+
+        var bufnr = winid->winbufnr()
+        setbufline(bufnr, 1, lines)
+        deletebufline(bufnr, len(lines) + 1, '$')
+
+        if item.context > 0
+            var name = bufname(item.context)
+            if name !=# ''
+                win_execute(winid, 'noautocmd keepalt file ' .. fnameescape(name))
+                win_execute(winid, 'filetype detect')
+            endif
+        endif
+    enddef
+
     preview.PopupPicker(
         items,
         '',
         (i) => execute(':buffer ' .. i.context),
-        (i) => getbufline(i.context, 1, 100)
+        BufferPreview
     )
 enddef
 

@@ -56,7 +56,7 @@ export def PopupPicker(
 
         var bufnr = s.preview->winbufnr()
         setbufvar(bufnr, '&modifiable', true)
-        call(s.on_preview, [item, bufnr, s.preview])
+        call(s.on_preview, [item, s.preview])
         setbufvar(bufnr, '&modifiable', false)
     enddef
 
