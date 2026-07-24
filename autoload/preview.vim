@@ -54,10 +54,25 @@ export def PopupPicker(
             return
         endif
 
+        var preview = call(s.on_preview, [item])
+
         var bufnr = s.preview->winbufnr()
         setbufvar(bufnr, '&modifiable', true)
-        call(s.on_preview, [item, s.preview])
+
+        setbufline(bufnr, 1, preview.lines)
+        deletebufline(bufnr, len(preview.lines) + 1, '$')
+
         setbufvar(bufnr, '&modifiable', false)
+
+        var winid = s.preview
+        var name = preview.name
+        if name !=# ''
+            win_execute(winid, 'noautocmd keepalt file ' .. fnameescape(name))
+            win_execute(winid, 'filetype detect')
+        else
+            win_execute(winid, 'noautocmd keepalt file')
+            win_execute(winid, 'setlocal filetype=')
+        endif
     enddef
 
 
