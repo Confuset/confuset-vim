@@ -105,7 +105,6 @@ export def PopupPicker(
 
 
     def Key(s: dict<any>, id: number, key: string): number
-
         if key ==# "\<Esc>" || key ==# "x"
             s->Close()
             return 1
@@ -137,6 +136,12 @@ export def PopupPicker(
             endif
 
         else
+            var trans = keytrans(key)
+
+            # interne Vim-Sondercodes ignorieren
+            if trans =~# '^<.*>$'
+                return 1
+            endif
             s.query ..= key
         endif
 

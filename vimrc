@@ -255,7 +255,8 @@ def OpenFilePicker(start: string = '')
 
         var func_name = &findfunc
         if func_name != ''
-            files = call(func_name, [s, false])
+            var FindFunc = function(func_name)
+            files = FindFunc(s, false)
         elseif s != ''
             files = glob(s, 0, 1)
         else
