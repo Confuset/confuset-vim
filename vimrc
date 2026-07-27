@@ -50,7 +50,9 @@ colorscheme gruvbox8
 set background=dark
 
 # grep ripgrep
-if executable('rg')
+if !executable('rg')
+    echom "rg is missing"
+else
     set grepformat+=%f:%l:%c:%m
     set grepprg=rg\ --vimgrep\ --smart-case\ --follow\ --no-messages
 
