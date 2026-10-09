@@ -5,7 +5,6 @@ var msvc_loaded = false
 var msvc_job = null_job
 
 export def Ensure(): bool
-
     if msvc_loaded
         return true
     endif
@@ -14,7 +13,7 @@ export def Ensure(): bool
         LoadAsync()
     endif
 
-    while job_status(msvc_job) == 'run'
+    while msvc_loading
         sleep 10m
     endwhile
 
@@ -33,17 +32,23 @@ def LoadAsync()
 
     var cmd = $'cmd /c ""{install}\Common7\Tools\VsDevCmd.bat" -no_logo -arch=x64 && set"'
 
-    job_start(cmd, {
+    msvc_job = job_start(cmd, {
         out_io: 'buffer',
         out_name: '[VsDevCmd]',
         exit_cb: OnMSVCExit,
     })
+
+    if job_status(msvc_job) == 'fail'
+        msvc_loading = false
+        echom 'Failed to start VsDevCmd'
+    endif
 enddef
 
 def OnMSVCExit(job: job, status: number)
 
     if status != 0
         echom 'VsDevCmd failed: ' .. status
+        msvc_loading = false
         return
     endif
 
