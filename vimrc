@@ -308,8 +308,43 @@ def OpenBufferPicker(start: string = '')
     )
 enddef
 
+export def OpenLinesPicker(start: string = '')
+  var items: list<dict<any>> = []
+
+  for b in getbufinfo({'buflisted': 1})
+    var lines = getbufline(b.bufnr, 1, '$')
+
+    for i in range(len(lines))
+      items->add({
+        text: lines[i],
+        bufnr: b.bufnr,
+        lnum: i + 1,
+      })
+    endfor
+  endfor
+
+  def BufferLinePreview(item: dict<any>): dict<any>
+      var first_line = max([1, item.lnum - 10])
+      return {
+          lines: getbufline(item.bufnr, first_line, first_line + 20),
+          name: bufname(item.bufnr)
+      }
+  enddef
+
+  preview.PopupPicker(
+    items,
+    start,
+    (item) => {
+      execute('buffer ' .. item.bufnr)
+      cursor(item.lnum, 1)
+    },
+    BufferLinePreview
+  )
+enddef
+
 command! -nargs=? Files OpenFilePicker(<q-args>)
 command! -nargs=? Buffers OpenBufferPicker(<q-args>)
+command! -nargs=? Lines OpenLinesPicker(<q-args>)
 
 import autoload 'vsenv.vim'
 augroup MSVC
