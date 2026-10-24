@@ -50,7 +50,9 @@ colorscheme gruvbox8
 set background=dark
 
 # grep ripgrep
-if executable('rg')
+if !executable('rg')
+    echom "rg is missing"
+else
     set grepformat+=%f:%l:%c:%m
     set grepprg=rg\ --vimgrep\ --smart-case\ --follow\ --no-messages
 
@@ -246,4 +248,107 @@ enddef
 command! LoadLsp call LoadLsp()
 
 source <sfile>:p:h/tfs.vim
-source <sfile>:p:h/preview.vim
+source <sfile>:p:h/dat.vim
+
+import autoload 'preview.vim'
+
+def OpenFilePicker(start: string = '')
+    def GetFiles(s: string = ''): list<dict<any>>
+        var files: list<string>
+
+        var func_name = &findfunc
+        if func_name != ''
+            var FindFunc = function(func_name)
+            files = FindFunc(s, false)
+        elseif s != ''
+            files = glob(s, 0, 1)
+        else
+            files = glob('**/*', 0, 1)
+                ->filter((_, v) => filereadable(v))
+        endif
+
+        return files->mapnew(
+            (_, f) => ({'context': f, 'text': f}))
+    enddef
+
+    def FilePreview(item: dict<any>): dict<any>
+        return {
+            lines: filereadable(item.context)
+                ? readfile(item.context, '', 100)
+                : ['<not readable>'],
+            name: item.context
+        }
+    enddef
+
+    preview.PopupPicker(
+        GetFiles(start),
+        '',
+        (i) => execute('edit ' .. fnameescape(i.context)),
+        FilePreview
+    )
+enddef
+
+def OpenBufferPicker(start: string = '')
+    var buffers = getbufinfo({'buflisted': 1})
+    var items = buffers->mapnew(
+        (_, b) => ({ text: fnamemodify(b.name, ':~:.'), context: b.bufnr })
+    )
+
+    def BufferPreview(item: dict<any>): dict<any>
+        return {
+            lines: getbufline(item.context, 1, 100),
+            name: bufname(item.context)
+        }
+    enddef
+
+    preview.PopupPicker(
+        items,
+        '',
+        (i) => execute(':buffer ' .. i.context),
+        BufferPreview
+    )
+enddef
+
+export def OpenLinesPicker(start: string = '')
+  var items: list<dict<any>> = []
+
+  for b in getbufinfo({'buflisted': 1})
+    var lines = getbufline(b.bufnr, 1, '$')
+
+    for i in range(len(lines))
+      items->add({
+        text: lines[i],
+        bufnr: b.bufnr,
+        lnum: i + 1,
+      })
+    endfor
+  endfor
+
+  def BufferLinePreview(item: dict<any>): dict<any>
+      var first_line = max([1, item.lnum - 10])
+      return {
+          lines: getbufline(item.bufnr, first_line, first_line + 20),
+          name: bufname(item.bufnr)
+      }
+  enddef
+
+  preview.PopupPicker(
+    items,
+    start,
+    (item) => {
+      execute('buffer ' .. item.bufnr)
+      cursor(item.lnum, 1)
+    },
+    BufferLinePreview
+  )
+enddef
+
+command! -nargs=? Files OpenFilePicker(<q-args>)
+command! -nargs=? Buffers OpenBufferPicker(<q-args>)
+command! -nargs=? Lines OpenLinesPicker(<q-args>)
+
+import autoload 'vsenv.vim'
+augroup MSVC
+    autocmd!
+    autocmd BufEnter *.cpp,*.c,*.h call vsenv.Ensure()
+augroup END
