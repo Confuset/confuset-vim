@@ -134,9 +134,11 @@ inoremap <silent> ,n <C-x><C-n>
 #inoremap <silent> ,u <C-x><C-u> #completfunc complete
 
 nnoremap <leader>a :argadd <c-r>=fnameescape(expand('%:p:h'))<cr>/*<C-d>
-nnoremap <leader>b :b <C-d>
-nnoremap <leader>e :e **/
-nnoremap <leader>g :grep<space>
+nnoremap <leader>b :Buffers<CR>
+nnoremap <leader>f :Files<CR>
+#nnoremap <leader>e :e **/
+nnoremap <leader>g :Grep<space>
+nnoremap <leader>l :Gall<space>
 nnoremap <leader>q :b#<cr>
 
 inoremap <c-u> <ESC>viwUea
@@ -228,7 +230,6 @@ def LoadLsp()
     nnoremap <leader>s :LspSymbolSearch<cr>
     nnoremap <leader>u :LspShowReferences<cr>
     nnoremap <leader>m :LspDocumentSymbol<cr>
-    nnoremap <leader>f :call feedkeys(":Files \<Tab>", 'tn')<CR>
 
     nnoremap <leader>e :LspHover<CR>
     nnoremap <leader>r :LspRename<CR>
