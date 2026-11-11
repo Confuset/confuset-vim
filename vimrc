@@ -138,9 +138,9 @@ inoremap <silent> ,n <C-x><C-n>
 nnoremap <leader>a :argadd <c-r>=fnameescape(expand('%:p:h'))<cr>/*<C-d>
 nnoremap <leader>b :Buffers<CR>
 nnoremap <leader>f :Files<CR>
+nnoremap <leader>l :Lines<CR>
 #nnoremap <leader>e :e **/
 nnoremap <leader>g :Grep<space>
-nnoremap <leader>l :Gall<space>
 nnoremap <leader>q :b#<cr>
 
 inoremap <c-u> <ESC>viwUea
