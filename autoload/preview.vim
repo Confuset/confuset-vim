@@ -6,18 +6,24 @@ vim9script
 # Usage:
 #   PopupPicker(items, initial_query, on_select [, on_preview])
 #
-# Example:
-#   PopupPicker(
-#     ['apple','banana','cherry'],
-#     '',
-#     {x -> execute('echo ' .. x)},
-#     {x -> ['Preview:', x]}
-#   )
+# OnSelect receives a list of selected items.
+#
+# Space: toggle selection
+# Enter: accept selection
+# Esc: cancel
 
 if exists('g:loaded_popup_picker')
   finish
 endif
 g:loaded_popup_picker = 1
+
+highlight default link PopupPickerSelected Special
+
+if empty(prop_type_get('PopupPickerSelected'))
+    prop_type_add('PopupPickerSelected', {
+        highlight: 'PopupPickerSelected'
+    })
+endif
 
 # -------------------------------
 # PopupPicker
@@ -41,6 +47,25 @@ export def PopupPicker(
         endif
 
         s.index = min([s.index, max([len(s.filtered) - 1, 0])])
+    enddef
+
+    # -------------------------------
+    # Multi selection
+    # -------------------------------
+    def ToggleSelection(s: dict<any>)
+        var item = get(s.filtered, s.index, null)
+
+        if item == null
+            return
+        endif
+
+        var key = string(item)
+
+        if has_key(s.selected, key)
+            remove(s.selected, key)
+        else
+            s.selected[key] = item
+        endif
     enddef
 
 
@@ -75,16 +100,28 @@ export def PopupPicker(
         endif
     enddef
 
-
     def Render(s: dict<any>)
         var lines = []
 
-        lines->add('Search: ' .. s.query)
-        lines->add(repeat('─', 40))
+        lines->add({text: 'Search: ' .. s.query})
+        lines->add({text: repeat('─', 40)})
 
         for i in range(len(s.filtered))
             var prefix = (i == s.index) ? '> ' : '  '
-            lines->add(prefix .. s.filtered[i].text)
+            var line = prefix .. s.filtered[i].text
+
+            if has_key(s.selected, string(s.filtered[i]))
+                lines->add({
+                    text: line,
+                    props: [{
+                        col: 1,
+                        length: strlen(line),
+                        type: 'PopupPickerSelected'
+                    }]
+                })
+            else
+                lines->add({text: line})
+            endif
         endfor
 
         popup_settext(s.popup, lines)
@@ -105,19 +142,37 @@ export def PopupPicker(
 
 
     def Key(s: dict<any>, id: number, key: string): number
-        if key ==# "\<Esc>" || key ==# "x"
+        if key ==# "\<Esc>"
             s->Close()
             return 1
 
         elseif key ==# "\<CR>"
-            var item = get(s.filtered, s.index, null)
+            var selected = values(s.selected)
+
+            # If nothing was selected explicitly,
+            # use the current item.
+            if empty(selected)
+                var item = get(s.filtered, s.index, null)
+
+                if item != null
+                    selected = [item]
+                endif
+            endif
 
             s->Close()
 
-            if item != null
-                call(s.on_select, [item])
+            if !empty(selected)
+                call(s.on_select, [selected])
             endif
 
+            return 1
+
+        elseif key ==# "\<Space>"
+            s->ToggleSelection()
+            if s.index < len(s.filtered) - 1
+                s.index += 1
+            endif
+            s->Render()
             return 1
 
         elseif key ==# "\<BS>"
@@ -159,6 +214,7 @@ export def PopupPicker(
         index: 0,
         popup: -1,
         preview: -1,
+        selected: {},
         on_select: OnSelect,
         on_preview: OnPreview,
     }
