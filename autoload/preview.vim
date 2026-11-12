@@ -25,13 +25,15 @@ if empty(prop_type_get('PopupPickerSelected'))
     })
 endif
 
+type MultiselectCallback = func(list<dict<any>>): void
+
 # -------------------------------
 # PopupPicker
 # -------------------------------
 export def PopupPicker(
     items: list<dict<any>>,
     query: string,
-    OnSelect: func,
+    OnSelect: MultiselectCallback,
     OnPreview: func = null_function
 )
 

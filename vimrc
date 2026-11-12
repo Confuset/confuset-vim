@@ -301,10 +301,14 @@ def OpenBufferPicker(start: string = '')
         }
     enddef
 
+    var OnSelect: MultiselectCallback = (items) => {
+        execute(':buffer ' .. i[0].context)
+    }
+
     preview.PopupPicker(
         items,
         '',
-        (i) => execute(':buffer ' .. i.context),
+        OnSelect,
         BufferPreview
     )
 enddef
@@ -336,8 +340,8 @@ export def OpenLinesPicker(start: string = '')
     items,
     start,
     (item) => {
-      execute('buffer ' .. item.bufnr)
-      cursor(item.lnum, 1)
+      execute('buffer ' .. item[0].bufnr)
+      cursor(item[0].lnum, 1)
     },
     BufferLinePreview
   )
