@@ -25,7 +25,7 @@ if empty(prop_type_get('PopupPickerSelected'))
     })
 endif
 
-type MultiselectCallback = func(list<dict<any>>): void
+export type MultiselectCallback = func(list<dict<any>>): void
 
 # -------------------------------
 # PopupPicker
@@ -169,7 +169,7 @@ export def PopupPicker(
 
             return 1
 
-        elseif key ==# "\<Space>"
+        elseif key ==# "\<Tab>"
             s->ToggleSelection()
             if s.index < len(s.filtered) - 1
                 s.index += 1

@@ -280,10 +280,16 @@ def OpenFilePicker(start: string = '')
         }
     enddef
 
+    var OnSelect = (items) => {
+        for i in items
+            execute('edit' .. fnameescape(i.context))
+        endfor
+    }
+
     preview.PopupPicker(
         GetFiles(start),
         '',
-        (i) => execute('edit ' .. fnameescape(i.context)),
+        OnSelect,
         FilePreview
     )
 enddef
@@ -301,8 +307,8 @@ def OpenBufferPicker(start: string = '')
         }
     enddef
 
-    var OnSelect: MultiselectCallback = (items) => {
-        execute(':buffer ' .. i[0].context)
+    var OnSelect = (selects) => {
+        execute(':buffer ' .. selects[0].context)
     }
 
     preview.PopupPicker(
@@ -339,10 +345,27 @@ export def OpenLinesPicker(start: string = '')
   preview.PopupPicker(
     items,
     start,
-    (item) => {
-      execute('buffer ' .. item[0].bufnr)
-      cursor(item[0].lnum, 1)
-    },
+    (item) =>
+        {
+            if len(item) == 0
+                execute('buffer ' .. item[0].bufnr)
+                cursor(item[0].lnum, 1)
+            else
+                var lines: list<dict<any>> = []
+
+                for i in item
+                    add(lines, {
+                        bufnr: i.bufnr,
+                        lnum: i.lnum,
+                        col: 1,
+                        text: getbufline(i.bufnr, i.lnum)[0] }
+                    )
+                endfor
+
+                setqflist([], 'r', {items: lines, title: 'Lines'})
+                copen
+            endif
+        },
     BufferLinePreview
   )
 enddef
