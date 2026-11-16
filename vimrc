@@ -30,6 +30,19 @@ set wildmode=noselect:lastused,full
 set autocomplete
 set completeopt=fuzzy,preview
 
+set laststatus=2
+set statusline=
+#set statusline+=%#LineNr#
+set statusline+=\ %f
+set statusline+=%m
+set statusline+=%=
+#set statusline+=%#CursorColumn#
+set statusline+=%y
+set statusline+=\ %{&fileencoding?&fileencoding:&encoding}
+set statusline+=\|%{&fileformat}
+set statusline+=\ %p%%
+set statusline+=\ %l:%c
+
 syntax enable
 filetype plugin indent on
 
